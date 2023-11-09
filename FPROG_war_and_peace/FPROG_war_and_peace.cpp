@@ -1,5 +1,12 @@
-﻿// FPROG_war_and_peace.cpp : Defines the entry point for the application.
-//
+﻿#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <map>
+#include <numeric>
+#include <functional>
 
 #include "FPROG_war_and_peace.h"
 
