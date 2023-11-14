@@ -26,6 +26,14 @@ auto readFile = [](const std::string& filename) -> std::vector<std::string>
     return lines;
 };
 
+auto tokenize = [](const std::string& str) -> std::vector<std::string> {
+    std::istringstream iss(str);
+    return std::vector<std::string>{
+        std::istream_iterator<std::string>{iss},
+            std::istream_iterator<std::string>{}
+    };
+};
+
 int main()
 {
     std::string book = "../../../../files/war_and_peace.txt";
@@ -38,6 +46,19 @@ int main()
         auto peaceTerms = readFile(peaceWordList);
 
         std::cout << "\nread files successfully\n";
+
+        // Test the tokenize function on the first line of the book
+        if (!bookLines.empty()) {
+            auto words = tokenize(bookLines[0]);
+            std::cout << "First line tokenized into words:\n";
+            for (const auto& word : words) {
+                std::cout << word << ' ';
+            }
+            std::cout << "\n";
+        }
+        else {
+            std::cout << "Book is empty. Nothing to tokenize.\n";
+        }
         // rest of the processing will go here
 
     }
