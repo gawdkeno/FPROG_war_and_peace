@@ -104,6 +104,25 @@ auto countOccurrences = [](const std::vector<std::string>& words) -> std::map<st
     return wordCount;
 };
 
+/**
+ * Calculates the density of a set of terms within a vector of words.
+ * Density is the count of term occurrences divided by the total number of words.
+ *
+ * @param chapter The vector of words representing the chapter text.
+ * @param terms The set of terms to calculate the density for.
+ * @return The density of the terms as a double.
+ */
+auto calculateDensity = [](const std::vector<std::string>& chapter, const std::set<std::string>& terms) -> double 
+{
+    auto count = std::count_if(chapter.begin(), chapter.end(), [&terms](const std::string& word)
+    {
+        return terms.find(word) != terms.end();
+    });
+    double termOccurrences = count;
+    double totalWords = chapter.size();
+    return totalWords > 0 ? termOccurrences / totalWords : 0.0;
+};
+
 int main() 
 {
     std::string bookPath = "../../../../files/war_and_peace.txt";
@@ -116,6 +135,10 @@ int main()
         auto peaceTerms = readFile(peaceTermsPath);
 
         std::cout << "\nRead files successfully\n";
+
+        // Convert the term lists to sets for efficient searching
+        std::set<std::string> warTermsSet(warTerms.begin(), warTerms.end());
+        std::set<std::string> peaceTermsSet(peaceTerms.begin(), peaceTerms.end());
 
         if (!bookLines.empty()) 
         {
@@ -144,6 +167,8 @@ int main()
             {
                 std::cout << pair.first << ": " << pair.second << '\n';
             }
+            double warDensity = calculateDensity(firstChapterWords, warTermsSet);
+            std::cout << "War word density: " << warDensity << std::endl;
 
             auto peaceFilteredWords = filterWords(firstChapterWords, peaceTerms);
             std::cout << "Filtering words based on peace terms...\n";
@@ -155,7 +180,8 @@ int main()
             {
                 std::cout << pair.first << ": " << pair.second << '\n';
             }
-
+            double peaceDensity = calculateDensity(firstChapterWords, peaceTermsSet);
+            std::cout << "Peace word density: " << peaceDensity << std::endl;
         }
         else 
         {
