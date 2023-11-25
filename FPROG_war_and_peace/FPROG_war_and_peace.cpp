@@ -11,6 +11,31 @@
 
 #include "FPROG_war_and_peace.h"
 
+
+/**
+ * Reads the contents of a file and returns them as a vector of strings.
+ * Each line of the file becomes a single string in the vector.
+ *
+ * @param filename The path to the file to be read.
+ * @return A vector of strings where each element is a line from the file.
+ * @throws std::runtime_error if the file cannot be opened.
+ */
+auto readFile = [](const std::string& filename) -> std::vector<std::string> 
+{
+    std::ifstream file(filename);
+    if (!file.is_open()) 
+    {
+        throw std::runtime_error("Could not open file: " + filename);
+    }
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(file, line)) 
+    {
+        lines.push_back(line);
+    }
+    return lines;
+};
+
 /**
  * Tokenizes a string into words using whitespace as the delimiter.
  *
@@ -41,34 +66,6 @@ auto tokenize = [](const std::string& str) -> std::vector<std::string>
 // 
 //     return result;
 // };
-
-/**
- * Reads the contents of a file, concatenates them into a single string,
- * and then tokenizes this string into words. Each word is returned as
- * an element in a vector.
- *
- * @param filename The path to the file to be read.
- * @return A vector of strings, where each element is a word from the file.
- * @throws std::runtime_error if the file cannot be opened.
- */
-auto readFile = [](const std::string& filename) -> std::vector<std::string>
-{
-    std::ifstream file(filename);
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Could not open file: " + filename);
-    }
-
-    std::string content;
-    std::string line;
-    while (std::getline(file, line))
-    {
-        content += line + "\n";  // Append each line to 'content' with a newline character
-    }
-    // still functional? tokenize in readFile function?
-    std::vector<std::string> tokenizedText = tokenize(content);
-    return tokenizedText;
-};
 
 /**
  * Filters a list of words based on a set of terms.
@@ -133,47 +130,64 @@ int main()
     std::string peaceTermsPath = "../../../../files/peace_terms.txt";
     try 
     {
-        auto tokenizedBookLines = readFile(bookPath);
-        auto tokenizedWarTerms = readFile(warTermsPath);
-        auto tokenizedPeaceTerms = readFile(peaceTermsPath);
+        auto bookLines = readFile(bookPath);
+        auto warTerms = readFile(warTermsPath);
+        auto peaceTerms = readFile(peaceTermsPath);
 
-        std::cout << "\nRead and tokenized files successfully\n";
+        std::cout << "\nRead files successfully\n";
 
         // Convert the term lists to sets for efficient searching
-        std::set<std::string> warTermsSet(tokenizedWarTerms.begin(), tokenizedWarTerms.end());
-        std::set<std::string> peaceTermsSet(tokenizedPeaceTerms.begin(), tokenizedPeaceTerms.end());
+        std::set<std::string> warTermsSet(warTerms.begin(), warTerms.end());
+        std::set<std::string> peaceTermsSet(peaceTerms.begin(), peaceTerms.end());
 
-        if (!tokenizedBookLines.empty()) 
+        if (!bookLines.empty()) 
         {
+            auto chapterEnd = std::find_if(bookLines.begin(), bookLines.end(), [](const std::string& line) 
+            {
+                return line.find("CHAPTER") != std::string::npos;
+            });
+            std::vector<std::string> firstChapter(bookLines.begin(), chapterEnd);
+
+            // Tokenize the first chapter
+            std::vector<std::string> firstChapterWords;
+            for (const auto& line : firstChapter) 
+            {
+                auto wordsInLine = tokenize(line);
+                firstChapterWords.insert(firstChapterWords.end(), wordsInLine.begin(), wordsInLine.end());
+            }
+
             // Filter words based on war terms
-            auto warFilteredWords = filterWords(tokenizedBookLines, tokenizedWarTerms);
+            auto warFilteredWords = filterWords(firstChapterWords, warTerms);
+            std::cout << "Filtering words based on war terms...\n";
+
+            // Count occurrences of filtered war words
             auto warWordCounts = countOccurrences(warFilteredWords);
-            double warDensity = calculateDensity(tokenizedBookLines, warTermsSet);
-
-            // Filter words based on peace terms
-            auto peaceFilteredWords = filterWords(tokenizedBookLines, tokenizedPeaceTerms);
-            auto peaceWordCounts = countOccurrences(peaceFilteredWords);
-            double peaceDensity = calculateDensity(tokenizedBookLines, peaceTermsSet);
-
-            // Output results
-            std::cout << "\nWar word counts:\n";
-            for (const auto& pair : warWordCounts)
+            std::cout << "War word counts:\n";
+            for (const auto& pair : warWordCounts) 
             {
                 std::cout << pair.first << ": " << pair.second << '\n';
             }
+            double warDensity = calculateDensity(firstChapterWords, warTermsSet);
             std::cout << "War word density: " << warDensity << std::endl;
 
-            std::cout << "\nPeace word counts:\n";
+            auto peaceFilteredWords = filterWords(firstChapterWords, peaceTerms);
+            std::cout << "Filtering words based on peace terms...\n";
+
+            // Count occurrences of filtered peace words
+            auto peaceWordCounts = countOccurrences(peaceFilteredWords);
+            std::cout << "Peace word counts:\n";
             for (const auto& pair : peaceWordCounts)
             {
                 std::cout << pair.first << ": " << pair.second << '\n';
             }
+            double peaceDensity = calculateDensity(firstChapterWords, peaceTermsSet);
             std::cout << "Peace word density: " << peaceDensity << std::endl;
         }
         else 
         {
             std::cout << "Book is empty. Nothing to tokenize.\n";
         }
+
     }
     catch (const std::exception& e) 
     {
