@@ -109,77 +109,190 @@ auto countOccurrences = [](const std::vector<std::string>& words) -> std::map<st
 
 /**
  * Calculates the density of a set of terms within a vector of words.
- * Density is the count of term occurrences divided by the total number of words.
+ * Density is the sum of the occurrences of specified terms divided by the total number of word occurrences.
+ * It uses the countOccurrences function to count all word occurrences and then accumulates counts for the specified terms.
  *
  * @param chapter The vector of words representing the chapter text.
  * @param terms The set of terms to calculate the density for.
- * @return The density of the terms as a double.
+ * @return The density of the terms as a double, calculated as the proportion of the term occurrences out of the total word occurrences.
  */
-auto calculateDensity = [](const std::vector<std::string>& chapter, const std::set<std::string>& terms) -> double 
+auto calculateDensity = [&](const std::vector<std::string>& chapter, const std::set<std::string>& terms) -> double
 {
-    auto count = std::count_if(chapter.begin(), chapter.end(), [&terms](const std::string& word)
+    auto wordCounts = countOccurrences(chapter);
+    double termOccurrences = std::accumulate(wordCounts.begin(), wordCounts.end(), 0.0, [&terms](double sum, const std::pair<std::string, int>& pair) 
     {
-        return terms.find(word) != terms.end();
+        return sum + (terms.find(pair.first) != terms.end() ? pair.second : 0);
     });
-    double termOccurrences = count;
+
     double totalWords = chapter.size();
     return totalWords > 0 ? termOccurrences / totalWords : 0.0;
 };
 
-int main() 
+/**
+ * Splits a tokenized book text into chapters based on a specific keyword.
+ * Each chapter is represented as a vector of words, and all chapters are contained within a vector.
+ *
+ * The function assumes that each new chapter starts with the word "CHAPTER".
+ * It creates a new chapter every time this keyword is encountered, except at the start of the text.
+ *
+ * @param bookLines A vector of words representing the entire book text.
+ * @return A vector of chapters, where each chapter is a vector of words.
+ */
+auto splitIntoChapters = [](const std::vector<std::string>& bookLines) -> std::vector<std::vector<std::string>>
+{
+    std::vector<std::vector<std::string>> chapters;
+    std::vector<std::string> currentChapter;
+    for (const auto& word : bookLines)
+    {
+        if (word == "CHAPTER" && !currentChapter.empty())
+        {
+            chapters.push_back(currentChapter);
+            currentChapter.clear();
+        }
+        currentChapter.push_back(word);
+    }
+    if (!currentChapter.empty()) // last chapter
+    {
+        chapters.push_back(currentChapter);
+    }
+    return chapters;
+};
+
+double calculateSimilarity() {
+    std::ifstream infile1("../../../../files/our_output.txt"), infile2("../../../../files/should_output.txt");
+    if (!infile1.is_open() || !infile2.is_open()) {
+        std::cerr << "Error opening files!" << std::endl;
+        return -1;
+    }
+
+    std::string line1, line2;
+    int similarLines = 0, totalLines = 0;
+
+    while (getline(infile1, line1) && getline(infile2, line2)) {
+        totalLines++;
+        if (line1 == line2) {
+            similarLines++;
+        }
+    }
+
+    infile1.close();
+    infile2.close();
+
+    double similarity = (totalLines > 0) ? (static_cast<double>(similarLines) / totalLines) * 100 : 0;
+    if (similarity >= 0)
+    {
+        std::cout << "The files are " << similarity << "% similar." << std::endl;
+    }
+}
+
+//int main()
+//{
+//    std::string bookPath = "../../../../files/war_and_peace.txt";
+//    std::string warTermsPath = "../../../../files/war_terms.txt";
+//    std::string peaceTermsPath = "../../../../files/peace_terms.txt";
+//    try
+//    {
+//        auto tokenizedBookLines = readFile(bookPath);
+//        auto tokenizedWarTerms = readFile(warTermsPath);
+//        auto tokenizedPeaceTerms = readFile(peaceTermsPath);
+//
+//        std::cout << "\nRead and tokenized files successfully\n";
+//
+//        std::set<std::string> warTermsSet(tokenizedWarTerms.begin(), tokenizedWarTerms.end());
+//        std::set<std::string> peaceTermsSet(tokenizedPeaceTerms.begin(), tokenizedPeaceTerms.end());
+//
+//        auto chapters = splitIntoChapters(tokenizedBookLines);
+//
+//        for (size_t i = 0; i < chapters.size(); ++i)
+//        {
+//            // Process each chapter
+//            const auto& chapter = chapters[i];
+//
+//            // Filter and count occurrences of war and peace words
+//            auto warFilteredWords = filterWords(chapter, tokenizedWarTerms);
+//            auto peaceFilteredWords = filterWords(chapter, tokenizedPeaceTerms);
+//
+//            auto warWordCounts = countOccurrences(warFilteredWords);
+//            auto peaceWordCounts = countOccurrences(peaceFilteredWords);
+//
+//            double warDensity = calculateDensity(chapter, warTermsSet);
+//            double peaceDensity = calculateDensity(chapter, peaceTermsSet);
+//
+//            std::string category = warDensity > peaceDensity ? "War" : "Peace";
+//
+//            // Print results for the chapter
+//            std::cout << "\nChapter " << (i + 1) << " is " << category << "-related." << std::endl;
+//            std::cout << "War word counts:\n";
+//            for (const auto& pair : warWordCounts)
+//            {
+//                std::cout << pair.first << ": " << pair.second << '\n';
+//            }
+//            std::cout << "War word density: " << warDensity << std::endl;
+//
+//            std::cout << "Peace word counts:\n";
+//            for (const auto& pair : peaceWordCounts)
+//            {
+//                std::cout << pair.first << ": " << pair.second << '\n';
+//            }
+//            std::cout << "Peace word density: " << peaceDensity << std::endl;
+//        }
+//    }
+//    catch (const std::exception& e)
+//    {
+//        std::cerr << "Error: " << e.what() << std::endl;
+//        return EXIT_FAILURE;
+//    }
+//
+//    return EXIT_SUCCESS;
+//}
+
+int main()
 {
     std::string bookPath = "../../../../files/war_and_peace.txt";
     std::string warTermsPath = "../../../../files/war_terms.txt";
     std::string peaceTermsPath = "../../../../files/peace_terms.txt";
-    try 
+
+    // Create an ofstream for output file
+    std::ofstream outputFile("../../../../files/our_output.txt");
+
+    try
     {
         auto tokenizedBookLines = readFile(bookPath);
         auto tokenizedWarTerms = readFile(warTermsPath);
         auto tokenizedPeaceTerms = readFile(peaceTermsPath);
 
-        std::cout << "\nRead and tokenized files successfully\n";
-
-        // Convert the term lists to sets for efficient searching
         std::set<std::string> warTermsSet(tokenizedWarTerms.begin(), tokenizedWarTerms.end());
         std::set<std::string> peaceTermsSet(tokenizedPeaceTerms.begin(), tokenizedPeaceTerms.end());
 
-        if (!tokenizedBookLines.empty()) 
+        auto chapters = splitIntoChapters(tokenizedBookLines);
+
+        for (size_t i = 0; i < chapters.size(); ++i)
         {
-            // Filter words based on war terms
-            auto warFilteredWords = filterWords(tokenizedBookLines, tokenizedWarTerms);
-            auto warWordCounts = countOccurrences(warFilteredWords);
-            double warDensity = calculateDensity(tokenizedBookLines, warTermsSet);
+            const auto& chapter = chapters[i];
 
-            // Filter words based on peace terms
-            auto peaceFilteredWords = filterWords(tokenizedBookLines, tokenizedPeaceTerms);
-            auto peaceWordCounts = countOccurrences(peaceFilteredWords);
-            double peaceDensity = calculateDensity(tokenizedBookLines, peaceTermsSet);
+            double warDensity = calculateDensity(chapter, warTermsSet);
+            double peaceDensity = calculateDensity(chapter, peaceTermsSet);
 
-            // Output results
-            std::cout << "\nWar word counts:\n";
-            for (const auto& pair : warWordCounts)
-            {
-                std::cout << pair.first << ": " << pair.second << '\n';
-            }
-            std::cout << "War word density: " << warDensity << std::endl;
+            std::string category = warDensity > peaceDensity ? "war" : "peace";
 
-            std::cout << "\nPeace word counts:\n";
-            for (const auto& pair : peaceWordCounts)
-            {
-                std::cout << pair.first << ": " << pair.second << '\n';
-            }
-            std::cout << "Peace word density: " << peaceDensity << std::endl;
-        }
-        else 
-        {
-            std::cout << "Book is empty. Nothing to tokenize.\n";
+            // Print results for the chapter
+            std::string outputLine = "Chapter " + std::to_string(i + 1) + ": " + category + "-related\n";
+            std::cout << outputLine;
+            outputFile << outputLine;
         }
     }
-    catch (const std::exception& e) 
+    catch (const std::exception& e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
+        // Make sure to close the file before returning
+        outputFile.close();
         return EXIT_FAILURE;
     }
+
+    // Close the output file
+    outputFile.close();
+
+    calculateSimilarity();
 
     return EXIT_SUCCESS;
 }
