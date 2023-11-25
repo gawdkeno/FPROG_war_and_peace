@@ -26,22 +26,6 @@ auto tokenize = [](const std::string& str) -> std::vector<std::string>
     };
 };
 
-// alternative:
-// auto tokenize = [](const std::string& str) -> std::vector<std::string> 
-// {
-//     std::istringstream iss(str);
-//     std::vector<std::string> result;
-//     std::istream_iterator<std::string> it(iss);
-//     std::istream_iterator<std::string> end;
-// 
-//     for (; it != end; ++it) 
-//     {
-//         result.push_back(*it);
-//     }
-// 
-//     return result;
-// };
-
 /**
  * Reads the contents of a file, concatenates them into a single string,
  * and then tokenizes this string into words. Each word is returned as
@@ -71,19 +55,19 @@ auto readFile = [](const std::string& filename) -> std::vector<std::string>
 };
 
 /**
- * Filters a vector of words based on another vector of terms.
- * Only words that are present in the terms vector are kept, including duplicates.
+ * Filters a vector of words based on a set of terms.
+ * Only words that are present in the terms set are kept, including duplicates.
  *
  * @param chapter The vector of words to filter.
- * @param terms The vector of terms to filter against.
- * @return A vector of filtered words that are present in the terms vector.
+ * @param terms The set of terms to filter against.
+ * @return A vector of filtered words that are present in the terms set.
  */
 auto filterWords = [](const std::vector<std::string>& chapter, const std::set<std::string>& terms) -> std::vector<std::string> 
 {
     std::vector<std::string> filteredWords;
     std::copy_if(chapter.begin(), chapter.end(), std::back_inserter(filteredWords), [&terms](const std::string& word)
     {
-        return std::find(terms.begin(), terms.end(), word) != terms.end();
+        return terms.find(word) != terms.end();
     });
     return filteredWords;
 };
@@ -105,12 +89,12 @@ auto countOccurrences = [](const std::vector<std::string>& words) -> std::map<st
 };
 
 /**
- * Calculates the density of a set of terms within a vector of words.
+ * Calculates the density of a vector of terms within a vector of words.
  * Density is the sum of the occurrences of specified terms divided by the total number of word occurrences.
  * It uses the countOccurrences function to count all word occurrences and then accumulates counts for the specified terms.
  *
  * @param chapter The vector of words representing the chapter text.
- * @param terms The set of terms to calculate the density for.
+ * @param terms The vector of terms to calculate the density for.
  * @return The density of the terms as a double, calculated as the proportion of the term occurrences out of the total word occurrences.
  */
 auto calculateDensity = [&](const std::vector<std::string>& chapter, const std::vector<std::string>& terms) -> double
@@ -156,9 +140,12 @@ auto splitIntoChapters = [](const std::vector<std::string>& bookLines) -> std::v
     return chapters;
 };
 
-double calculateSimilarity() {
-    std::ifstream infile1("../../../../files/our_output.txt"), infile2("../../../../files/discord_others/old_output.txt");
-    if (!infile1.is_open() || !infile2.is_open()) {
+// TODO: make functional
+double calculateSimilarity() 
+{
+    std::ifstream infile1("../../../../files/our_output.txt"), infile2("../../../../files/should_output.txt");
+    if (!infile1.is_open() || !infile2.is_open())
+    {
         std::cerr << "Error opening files!" << std::endl;
         return -1;
     }
@@ -166,9 +153,11 @@ double calculateSimilarity() {
     std::string line1, line2;
     int similarLines = 0, totalLines = 0;
 
-    while (getline(infile1, line1) && getline(infile2, line2)) {
+    while (getline(infile1, line1) && getline(infile2, line2)) 
+    {
         totalLines++;
-        if (line1 == line2) {
+        if (line1 == line2) 
+        {
             similarLines++;
         }
     }
@@ -222,28 +211,28 @@ int main()
             std::cout << outputLine;
             outputFile << outputLine;
 
-            //// Count occurrences of filtered words
-            //auto warWordCounts = countOccurrences(std::vector<std::string>(warFilteredWords.begin(), warFilteredWords.end()));
-            //auto peaceWordCounts = countOccurrences(std::vector<std::string>(peaceFilteredWords.begin(), peaceFilteredWords.end()));
+            // Count occurrences of filtered words
+            auto warWordCounts = countOccurrences(std::vector<std::string>(warFilteredWords.begin(), warFilteredWords.end()));
+            auto peaceWordCounts = countOccurrences(std::vector<std::string>(peaceFilteredWords.begin(), peaceFilteredWords.end()));
 
-            //// Print war word counts
-            //std::cout << "War word counts:\n";
-            //for (const auto& pair : warWordCounts)
-            //{
-            //    std::cout << pair.first << ": " << pair.second << '\n';
-            //}
-            //std::cout << "War word density: " << warDensity << std::endl;
+            // Print war word counts
+            std::cout << "War word counts:\n";
+            for (const auto& pair : warWordCounts)
+            {
+                std::cout << pair.first << ": " << pair.second << '\n';
+            }
+            std::cout << "War word density: " << warDensity << std::endl;
 
-            //// Print peace word counts
-            //std::cout << "Peace word counts:\n";
-            //for (const auto& pair : peaceWordCounts)
-            //{
-            //    std::cout << pair.first << ": " << pair.second << '\n';
-            //}
-            //std::cout << "Peace word density: " << peaceDensity << std::endl;
+            // Print peace word counts
+            std::cout << "Peace word counts:\n";
+            for (const auto& pair : peaceWordCounts)
+            {
+                std::cout << pair.first << ": " << pair.second << '\n';
+            }
+            std::cout << "Peace word density: " << peaceDensity << std::endl;
 
-            //// Add a separator between chapters for clarity
-            //std::cout << "----------------------\n";
+            // Add a separator between chapters for clarity
+            std::cout << "----------------------\n";
         }
     }
     catch (const std::exception& e)
