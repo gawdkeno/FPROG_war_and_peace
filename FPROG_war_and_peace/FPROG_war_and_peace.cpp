@@ -142,45 +142,12 @@ auto splitIntoChapters = [](const std::vector<std::string>& bookLines) -> std::v
     return chapters;
 };
 
-double calculateSimilarity() 
-{
-    std::ifstream infile1("../../../../files/our_output.txt"), infile2("../../../../files/should_output.txt");
-    if (!infile1.is_open() || !infile2.is_open())
-    {
-        std::cerr << "Error opening files!" << std::endl;
-        return -1;
-    }
-
-    std::string line1, line2;
-    int similarLines = 0, totalLines = 0;
-
-    while (getline(infile1, line1) && getline(infile2, line2)) 
-    {
-        totalLines++;
-        if (line1 == line2) 
-        {
-            similarLines++;
-        }
-    }
-
-    infile1.close();
-    infile2.close();
-
-    double similarity = (totalLines > 0) ? (static_cast<double>(similarLines) / totalLines) * 100 : 0;
-    if (similarity >= 0)
-    {
-        std::cout << "The files are " << similarity << "% similar." << std::endl;
-    }
-}
-
 int main()
 {
     std::string bookPath = "../../../../files/war_and_peace.txt";
     std::string warTermsPath = "../../../../files/war_terms.txt";
     std::string peaceTermsPath = "../../../../files/peace_terms.txt";
 
-    // Create an ofstream for output file
-    std::ofstream outputFile("../../../../files/our_output.txt");
 
     try
     {
@@ -210,43 +177,13 @@ int main()
             // Print results for the chapter
             std::string outputLine = "Chapter " + std::to_string(i + 1) + ": " + category + "-related\n";
             std::cout << outputLine;
-            outputFile << outputLine;
-
-            // Count occurrences of filtered words
-            auto warWordCounts = countOccurrences(std::vector<std::string>(warFilteredWords.begin(), warFilteredWords.end()));
-            auto peaceWordCounts = countOccurrences(std::vector<std::string>(peaceFilteredWords.begin(), peaceFilteredWords.end()));
-
-            // Print war word counts
-            std::cout << "War word counts:\n";
-            for (const auto& pair : warWordCounts)
-            {
-                std::cout << pair.first << ": " << pair.second << '\n';
-            }
-            std::cout << "War word density: " << warDensity << std::endl;
-
-            // Print peace word counts
-            std::cout << "Peace word counts:\n";
-            for (const auto& pair : peaceWordCounts)
-            {
-                std::cout << pair.first << ": " << pair.second << '\n';
-            }
-            std::cout << "Peace word density: " << peaceDensity << std::endl;
-
-            std::cout << "----------------------\n";
         }
     }
     catch (const std::exception& e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        // Make sure to close the file before returning
-        outputFile.close();
         return EXIT_FAILURE;
     }
-
-    // Close the output file
-    outputFile.close();
-
-    calculateSimilarity();
 
     return EXIT_SUCCESS;
 }
