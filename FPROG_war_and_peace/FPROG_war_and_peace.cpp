@@ -8,28 +8,34 @@
 #include <numeric>
 #include <functional>
 #include <set>
+#include <cctype> // for std::ispunct
+#include <iterator> // for std::istream_iterator
 
 #include "FPROG_war_and_peace.h"
 
 /**
- * Tokenizes a string into words using whitespace as the delimiter.
+ * Tokenizes a string into words using whitespace as the delimiter and removes punctuation from each word.
  *
  * @param str The string to be tokenized.
- * @return A vector of words extracted from the string.
+ * @return A vector of words extracted from the string, with punctuation removed from each word.
  */
 auto tokenize = [](const std::string& str) -> std::vector<std::string> 
 {
     std::istringstream iss(str);
-    return std::vector<std::string>
+    std::vector<std::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+
+    std::transform(tokens.begin(), tokens.end(), tokens.begin(), [](std::string word) 
     {
-        std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}
-    };
+        word.erase(std::remove_if(word.begin(), word.end(), ::ispunct), word.end());
+        return word;
+    });
+
+    return tokens;
 };
 
 /**
- * Reads the contents of a file, concatenates them into a single string,
- * and then tokenizes this string into words. Each word is returned as
- * an element in a vector.
+ * Reads the contents of a file into a single string and then tokenizes this string into words.
+ * Each word is returned as an element in a vector.
  *
  * @param filename The path to the file to be read.
  * @return A vector of strings, where each element is a word from the file.
@@ -43,15 +49,11 @@ auto readFile = [](const std::string& filename) -> std::vector<std::string>
         throw std::runtime_error("Could not open file: " + filename);
     }
 
-    std::string content;
-    std::string line;
-    while (std::getline(file, line))
-    {
-        content += line + "\n";  // Append each line to 'content' with a newline character
-    }
-    // still functional? tokenize in readFile function?
-    std::vector<std::string> tokenizedText = tokenize(content);
-    return tokenizedText;
+    // Read the entire content of the file into a string using istreambuf_iterator
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    
+    // Tokenize the content into words
+    return tokenize(content);
 };
 
 /**
@@ -78,7 +80,7 @@ auto filterWords = [](const std::vector<std::string>& chapter, const std::set<st
  * @param words The vector of words to count occurrences in.
  * @return A map where each key is a word and the value is the count of occurrences.
  */
-auto countOccurrences = [](const std::vector<std::string>& words) -> std::map<std::string, int> // still needs threading etc.
+auto countOccurrences = [](const std::vector<std::string>& words) -> std::map<std::string, int>
 {
     std::map<std::string, int> wordCount;
     std::for_each(words.begin(), words.end(), [&wordCount](const std::string& word) 
@@ -140,7 +142,6 @@ auto splitIntoChapters = [](const std::vector<std::string>& bookLines) -> std::v
     return chapters;
 };
 
-// TODO: make functional
 double calculateSimilarity() 
 {
     std::ifstream infile1("../../../../files/our_output.txt"), infile2("../../../../files/should_output.txt");
@@ -231,7 +232,6 @@ int main()
             }
             std::cout << "Peace word density: " << peaceDensity << std::endl;
 
-            // Add a separator between chapters for clarity
             std::cout << "----------------------\n";
         }
     }
